@@ -1,0 +1,74 @@
+version: '3.7'
+
+services:
+  postgres:
+    container_name: postgres
+    image: docker-proxy.choco.kz/postgres:13.2-alpine
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    logging:
+      driver: none
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: docker-proxy.choco.kz/rabbitmq:3.8.12-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=vhost
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=pass
+    logging:
+      driver: none
+
+  centrifugo:
+    container_name: centrifugo
+    image: docker-proxy.choco.kz/centrifugo/centrifugo:v2.8.2
+    command: centrifugo -c config.json
+    volumes:
+      - ./external/centrifugo:/centrifugo
+    logging:
+      driver: none
+    ports:
+      - 9000:8000
+
+  django:
+    container_name: django
+    build: ./
+    volumes:
+      - ./src:/src:rw
+      - ./.env:/src/core/.env
+    depends_on:
+      - postgres
+    ports:
+      - 8000:8000
+    environment:
+      PROCESS: DEV_DJANGO
+      test: "pytest -v --cov . --cov-report term-missing
+      --cov-fail-under=100 --flake8 --mypy -n 4 --no-migrations
+      --reuse-db -W error
+      -W ignore::django.utils.deprecation.RemovedInDjango40Warning
+      -W ignore::ResourceWarning"
+      makemigrations: python manage.py makemigrations
+      migrate: python manage.py migrate
+      makemessages: python manage.py makemessages
+      compilemessages: python manage.py compilemessages
+      outdated: pip list --outdated --format=columns
+      bandit: bandit -r . --exclude tests
+      safety: safety check
+      mypy: mypy .
+      flake8: flake8 .
+      check: python manage.py check --deploy
+      shell: python manage.py shell_plus
+
+  celery:
+    container_name: celery
+    build: ./
+    volumes:
+      - ./src:/src:rw
+      - ./.env:/src/core/.env
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      PROCESS: DEV_CELERY

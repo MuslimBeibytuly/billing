@@ -1,0 +1,15 @@
+{
+  "v3_use_offset": true,
+  "token_hmac_secret_key": "EEF1C415FE8D22F5DD661162328B1",
+  "api_key": "A278C853943681FFE4E8C3C145E74",
+  "admin_password": "RedSection4",
+  "admin_secret": "EEF1C415FE8D22F5DD661162328B1",
+  "namespaces": [
+    {
+      "name": "seed",
+      "history_size": 16,
+      "history_lifetime": 512,
+      "history_recover": true
+    }
+  ]
+}
